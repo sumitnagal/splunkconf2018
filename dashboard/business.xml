@@ -1,0 +1,304 @@
+<form>
+  <label>Business</label>
+  <search id="vendor">
+    <query>| tstats summariesonly=$summary$ count AS Transaction sum(vendor.price) AS "price" sum(vendor.sale_price) AS "sale_price"
+      FROM datamodel=$vendor_datamodel$ where  vendor.$Field$="*$Value$*"
+       groupby host,_time,vendor.product_name,vendor.AcctID,vendor.Code,vendor.VendorID,vendor.productId,vendor.profit|    rename vendor.productId as productId| rename vendor.VendorID as VendorID |
+       rename vendor.AcctID as AcctID| rename vendor.product_name as product_name| rename vendor.profit as profit</query>
+    <earliest>$tok_time.earliest$</earliest>
+    <latest>$tok_time.latest$</latest>
+  </search>
+  <search id="customer">
+    <query>| tstats summariesonly=$summary$ count AS Transaction sum(Purchase.price) AS "price" sum(Purchase.is_success) AS "success" sum(Purchase.is_fail) AS "fail"
+      FROM datamodel=$customer_datamodel$ where  Purchase.$Field$="*$Value$*"
+      groupby host,_time,Purchase.product_name,Purchase.categoryId,Purchase.version,Purchase.browser,Purchase.profit|    rename Purchase.version as version| rename Purchase.browser as browser |
+       rename Purchase.categoryId as categoryId| rename Purchase.product_name as product_name| rename Purchase.profit as profit</query>
+    <earliest>$tok_time.earliest$</earliest>
+    <latest>$tok_time.latest$</latest>
+  </search>
+  <fieldset submitButton="true" autoRun="true">
+    <input type="time" token="tok_time" searchWhenChanged="false">
+      <label></label>
+      <default>
+        <earliest>-7d@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="Field">
+      <label>Field</label>
+      <seed>product_name</seed>
+      <choice value="product_name">product_name</choice>
+      <default>product_name</default>
+      <initialValue>product_name</initialValue>
+      <change>
+      <condition>
+          <set token="vendor_datamodel">Vendor</set>
+          <set token="customer_datamodel">Customer</set>
+        </condition>
+        </change>
+    </input>
+    <input type="text" token="Value">
+      <label>Value</label>
+      <seed>*</seed>
+    </input>
+    <input type="dropdown" token="tok_bucket">
+      <label>Bucket</label>
+      <choice value="1m">1m</choice>
+      <choice value="5m">5m</choice>
+      <choice value="10m">10m</choice>
+      <choice value="30m">30m</choice>
+      <choice value="1h">1h</choice>
+      <choice value="2h">2h</choice>
+      <choice value="6h">6h</choice>
+      <choice value="12h">12h</choice>
+      <choice value="1d">1d</choice>
+      <default>1d</default>
+    </input>
+    <input type="radio" token="summary">
+      <label>Summary</label>
+      <choice value="t">Cache</choice>
+      <choice value="f">Live</choice>
+      <default>t</default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <single>
+        <title>Total Customers</title>
+        <search base="vendor">
+          <query>stats dc(AcctID) as Total</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="trendInterval">auto</option>
+        <option name="underLabel">Purchase Requests</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Unique Vendor</title>
+        <search base="vendor">
+          <query>stats dc(VendorID) as Vendor</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="trendInterval">auto</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Profit</title>
+        <search base="vendor">
+          <query>stats sum(profit) as profit</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="trendInterval">auto</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <title>Purchase Request</title>
+        <search base="customer">
+          <query>stats sum(Transaction) as Total</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="trendInterval">auto</option>
+        <option name="underLabel">Purchase Requests</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Purchase Request Success</title>
+        <search base="customer">
+          <query>stats sum(success) as Success</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="trendInterval">auto</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Purchase Request Fail</title>
+        <search base="customer">
+          <query>stats sum(fail) as Fail</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="trendInterval">auto</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Selected Sale $form.Field$="$form.Value$"</title>
+        <search base="customer">
+          <query>search $form.Field$="$form.Value$" |stats sum(profit) AS "profit", sum(success) as Success,sum(fail) as Fail by product_name
+|  eval profit_per_item=profit/Success</query>
+        </search>
+        <option name="count">5</option>
+        <option name="drilldown">cell</option>
+        <format type="color" field="Fail">
+          <colorPalette type="list">[#FFFFFF,#F8BE34,#F1813F,#DC4E41]</colorPalette>
+          <scale type="threshold">0,10,50</scale>
+        </format>
+        <format type="color" field="Revenue">
+          <colorPalette type="list">[#DC4E41,#FFFFFF]</colorPalette>
+          <scale type="threshold">800</scale>
+        </format>
+        <drilldown>
+          <!-- Use set to specify the new token to be created.
+                     Use any token from the page or from the click event to produce the value needed. -->
+          <set token="form.Field">$click.name$</set>
+          <set token="form.filter">contains</set>
+          <set token="form.Value">$click.value$</set>
+          <set token="verbose">$form.Field$</set>
+        </drilldown>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Selected Sale $form.Field$="$form.Value$"</title>
+        <search base="vendor">
+          <query>search $form.Field$="$form.Value$"
+|  chart sum(profit) AS "Profit" over VendorID by product_name</query>
+        </search>
+        <option name="count">5</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <!-- Use set to specify the new token to be created.
+                     Use any token from the page or from the click event to produce the value needed. -->
+          <set token="form.Field">product_name</set>
+          <set token="form.filter">contains</set>
+          <set token="form.Value">$click.name2$</set>
+          <set token="verbose">$form.name2$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <!--<row>
+    <panel>
+      <table depends="$verbose$">
+        <title>Customer Information</title>
+        <search base="customer">
+          <query>search $form.Field$="*$form.Value$*"| head 25</query>
+        </search>
+        <option name="count">5</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$verbose$">
+        <title>Vendor Information</title>
+        <search base="vendor">
+          <query>search $form.Field$="*$form.Value$*"| head 25</query>
+        </search>
+        <option name="count">5</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row> -->
+  <row>
+    <panel>
+      <html>
+      <h3>
+       <p>
+        If you want to know about <a href="/app/search/tutorial?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Customer Details</a> , <a href="/app/search/conf2018_vendor_datamodel?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Vendor Details</a> and <a href="/app/search/business?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Business Details</a> information </p> </h3>
+
+    </html>
+    </panel>
+    <panel>
+      <html>
+      <h3>Now using $customer_datamodel$ and $vendor_datamodel$ datamodel , If you want to Browse <a href="https://google.com" target="_blank">Google</a>
+    </h3>
+    </html>
+    </panel>
+  </row>
+</form>
