@@ -1,10 +1,7 @@
 <form>
-  <label>Customer</label>
+  <label>Customer_search</label>
   <search id="timeInfo">
-    <query>| tstats summariesonly=$summary$ count AS Transaction sum(Purchase.price) AS "price" sum(Purchase.is_success) AS "success" sum(Purchase.is_fail) AS "fail"
-      FROM datamodel=$customer_datamodel$ where  Purchase.$Field$="*$Value$*"
-      groupby host,_time,Purchase.product_name,Purchase.categoryId,Purchase.version,Purchase.browser|    rename Purchase.version as version| rename Purchase.browser as browser |
-       rename Purchase.categoryId as categoryId| rename Purchase.product_name as product_name</query>
+    <query>sourcetype=access_* action=purchase  |  lookup prices_lookup productId AS productId   OUTPUT Code AS Code product_name AS product_name price AS price sale_price AS sale_price | eval profit = price - sale_price | search $Field$="*$Value$*" | rex field=useragent "(?P&lt;browser&gt;[^\/]+)\/(?P&lt;version&gt;[^ ]+)" | stats count as Transaction,count(eval(status=200)) as success,count(eval(status!=200)) as fail by host,_time,product_name,categoryId,version,browser,profit</query>
     <earliest>$tok_time.earliest$</earliest>
     <latest>$tok_time.latest$</latest>
   </search>
@@ -45,12 +42,6 @@
       <choice value="12h">12h</choice>
       <choice value="1d">1d</choice>
       <default>1d</default>
-    </input>
-    <input type="radio" token="summary">
-      <label>Summary</label>
-      <choice value="t">Cache</choice>
-      <choice value="f">Live</choice>
-      <default>t</default>
     </input>
   </fieldset>
   <row>
@@ -321,8 +312,8 @@
     <panel>
       <html>
       <h3>
-        <p>
-        If you want to know about <a href="/app/search/customer?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Customer Details</a> , <a href="/app/search/vendor?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Vendor Details</a> and <a href="/app/search/business?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Business Details</a> information </p> </h3>
+       <p>
+        If you want to know about <a href="/app/search/customer_search?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Customer Details</a> , <a href="/app/search/vendor_search?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Vendor Details</a> and <a href="/app/search/business_search?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Business Details</a> information </p> </h3>
 
     </html>
     </panel>

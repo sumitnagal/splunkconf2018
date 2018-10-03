@@ -1,10 +1,7 @@
 <form>
-  <label>Customer</label>
+  <label>Vendor_search</label>
   <search id="timeInfo">
-    <query>| tstats summariesonly=$summary$ count AS Transaction sum(Purchase.price) AS "price" sum(Purchase.is_success) AS "success" sum(Purchase.is_fail) AS "fail"
-      FROM datamodel=$customer_datamodel$ where  Purchase.$Field$="*$Value$*"
-      groupby host,_time,Purchase.product_name,Purchase.categoryId,Purchase.version,Purchase.browser|    rename Purchase.version as version| rename Purchase.browser as browser |
-       rename Purchase.categoryId as categoryId| rename Purchase.product_name as product_name</query>
+    <query>sourcetype=vendor_sales |  lookup prices_lookup Code AS Code     OUTPUT productId AS productId  product_name AS product_name price AS price sale_price AS sale_price | eval profit = price - sale_price | rex field=useragent "(?P&lt;browser&gt;[^\/]+)\/(?P&lt;version&gt;[^ ]+)" | stats count by host,_time,product_name,AcctID,Code,VendorID,productId,profit</query>
     <earliest>$tok_time.earliest$</earliest>
     <latest>$tok_time.latest$</latest>
   </search>
@@ -56,16 +53,18 @@
   <row>
     <panel>
       <single>
-        <title>Purchase Request</title>
+        <title>Total Customers</title>
         <search base="timeInfo">
-          <query>stats sum(Transaction) as Total</query>
+          <query>stats dc(AcctID) as Total</query>
         </search>
-        <option name="drilldown">none</option>
         <option name="colorBy">value</option>
         <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
         <option name="numberPrecision">0</option>
         <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
         <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
         <option name="showSparkline">1</option>
         <option name="showTrendIndicator">1</option>
         <option name="trendColorInterpretation">standard</option>
@@ -75,21 +74,22 @@
         <option name="unitPosition">after</option>
         <option name="useColors">0</option>
         <option name="useThousandSeparators">1</option>
-        <option name="linkView">search</option>
       </single>
     </panel>
     <panel>
       <single>
-        <title>Purchase Request Success</title>
+        <title>Unique Vendor</title>
         <search base="timeInfo">
-          <query>stats sum(success) as Success</query>
+          <query>stats dc(VendorID) as Vendor</query>
         </search>
-        <option name="drilldown">none</option>
         <option name="colorBy">value</option>
         <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
         <option name="numberPrecision">0</option>
         <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
         <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
         <option name="showSparkline">1</option>
         <option name="showTrendIndicator">1</option>
         <option name="trendColorInterpretation">standard</option>
@@ -98,21 +98,22 @@
         <option name="unitPosition">after</option>
         <option name="useColors">0</option>
         <option name="useThousandSeparators">1</option>
-        <option name="linkView">search</option>
       </single>
     </panel>
     <panel>
       <single>
-        <title>Purchase Request Fail</title>
+        <title>Profit</title>
         <search base="timeInfo">
-          <query>stats sum(fail) as Fail</query>
+          <query>stats sum(profit) as profit</query>
         </search>
-        <option name="drilldown">none</option>
         <option name="colorBy">value</option>
         <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
         <option name="numberPrecision">0</option>
         <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
         <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
         <option name="showSparkline">1</option>
         <option name="showTrendIndicator">1</option>
         <option name="trendColorInterpretation">standard</option>
@@ -121,15 +122,15 @@
         <option name="unitPosition">after</option>
         <option name="useColors">0</option>
         <option name="useThousandSeparators">1</option>
-        <option name="linkView">search</option>
       </single>
     </panel>
   </row>
   <row>
     <panel>
       <table>
+        <title>Vendor by product</title>
         <search base="timeInfo">
-          <query>stats sum(Transaction) as count,sum(success) as success,sum(fail) as fail by browser</query>
+          <query>stats dc(VendorID) as count by product_name</query>
         </search>
         <option name="count">5</option>
         <option name="drilldown">cell</option>
@@ -147,8 +148,11 @@
     </panel>
     <panel>
       <table>
+        <title>Profit by Vendor</title>
         <search base="timeInfo">
-          <query>stats sum(Transaction) as count by categoryId</query>
+          <query>stats sum(price) AS "Revenue", sum(sale_price) AS "sale_price" by VendorID
+|  eval profit = Revenue - sale_price
+|  fields - Revenue,sale_price</query>
         </search>
         <option name="count">5</option>
         <option name="drilldown">cell</option>
@@ -166,31 +170,16 @@
     </panel>
     <panel>
       <table>
-        <title>Purchases by Product</title>
+        <title>Profit by Product</title>
         <search base="timeInfo">
-          <query>stats sum(price) AS "Revenue", sum(success) as Success by product_name</query>
+          <query>chart sum(profit) AS "Profit" over VendorID by product_name</query>
         </search>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
+        <option name="count">5</option>
         <option name="dataOverlayMode">none</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisTitleY2.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.axisY2.enabled">false</option>
-        <option name="charting.axisY2.scale">inherit</option>
-        <option name="charting.chart">line</option>
-        <option name="charting.chart.nullValueMode">gaps</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">default</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">right</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
         <drilldown>
           <!-- Use set to specify the new token to be created.
                      Use any token from the page or from the click event to produce the value needed. -->
@@ -203,11 +192,6 @@
           <set token="form.tok_cluster">$row.cluster$</set>
            If we also set the form.sourcetype the input will get updated too -->
         </drilldown>
-        <option name="charting.chart.bubbleMaximumSize">50</option>
-        <option name="charting.chart.bubbleMinimumSize">10</option>
-        <option name="charting.chart.bubbleSizeBy">area</option>
-        <option name="count">5</option>
-        <option name="drilldown">cell</option>
       </table>
     </panel>
   </row>
@@ -260,7 +244,7 @@
       <chart depends="$product_name$" rejects="$categoryId">
         <title>Selected Sale $form.Field$="$form.Value$"</title>
         <search base="timeInfo">
-          <query>search $form.Field$="$form.Value$" |timechart span=$tok_bucket$ sum(success) as Success</query>
+          <query>search $form.Field$="$form.Value$" |timechart span=$tok_bucket$ sum(profit) AS "Profit" by product_name</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -272,17 +256,20 @@
         <option name="charting.axisY2.enabled">0</option>
         <option name="charting.axisY2.scale">inherit</option>
         <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
         <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
         <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
         <option name="charting.chart.stackMode">default</option>
         <option name="charting.chart.style">shiny</option>
         <option name="charting.drilldown">all</option>
         <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">right</option>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
+        <option name="refresh.display">progressbar</option>
         <drilldown>
           <!-- Use set to specify the new token to be created.
                      Use any token from the page or from the click event to produce the value needed. -->
@@ -292,12 +279,6 @@
           <set token="verbose">$form.Field$</set>
           <!-- If we also set the form.sourcetype the input will get updated too -->
         </drilldown>
-        <option name="charting.chart.bubbleMaximumSize">50</option>
-        <option name="charting.chart.bubbleMinimumSize">10</option>
-        <option name="charting.chart.bubbleSizeBy">area</option>
-        <option name="count">5</option>
-        <option name="charting.chart.showDataLabels">none</option>
-        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
       </chart>
     </panel>
   </row>
@@ -321,8 +302,8 @@
     <panel>
       <html>
       <h3>
-        <p>
-        If you want to know about <a href="/app/search/customer?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Customer Details</a> , <a href="/app/search/vendor?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Vendor Details</a> and <a href="/app/search/business?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Business Details</a> information </p> </h3>
+       <p>
+        If you want to know about <a href="/app/search/customer_search?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Customer Details</a> , <a href="/app/search/vendor_search?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Vendor Details</a> and <a href="/app/search/business_search?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Business Details</a> information </p> </h3>
 
     </html>
     </panel>

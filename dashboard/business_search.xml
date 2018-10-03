@@ -1,21 +1,43 @@
 <form>
-  <label>Business</label>
+  <label>Business_search</label>
   <search id="vendor">
-    <query>| tstats summariesonly=$summary$ count AS Transaction sum(vendor.price) AS "price" sum(vendor.sale_price) AS "sale_price"
-      FROM datamodel=$vendor_datamodel$ where  vendor.$Field$="*$Value$*"
-       groupby host,_time,vendor.product_name,vendor.AcctID,vendor.Code,vendor.VendorID,vendor.productId,vendor.profit|    rename vendor.productId as productId| rename vendor.VendorID as VendorID |
-       rename vendor.AcctID as AcctID| rename vendor.product_name as product_name| rename vendor.profit as profit</query>
+    <query>sourcetype=vendor_sales |  lookup prices_lookup Code AS Code     OUTPUT productId AS productId  product_name AS product_name price AS price sale_price AS sale_price |search $Field$="*$Value$*" |eval profit = price - sale_price | rex field=useragent "(?P&lt;browser&gt;[^\/]+)\/(?P&lt;version&gt;[^ ]+)" | stats count by host,_time,product_name,AcctID,Code,VendorID,productId,profit</query>
     <earliest>$tok_time.earliest$</earliest>
     <latest>$tok_time.latest$</latest>
   </search>
   <search id="customer">
-    <query>| tstats summariesonly=$summary$ count AS Transaction sum(Purchase.price) AS "price" sum(Purchase.is_success) AS "success" sum(Purchase.is_fail) AS "fail"
-      FROM datamodel=$customer_datamodel$ where  Purchase.$Field$="*$Value$*"
-      groupby host,_time,Purchase.product_name,Purchase.categoryId,Purchase.version,Purchase.browser,Purchase.profit|    rename Purchase.version as version| rename Purchase.browser as browser |
-       rename Purchase.categoryId as categoryId| rename Purchase.product_name as product_name| rename Purchase.profit as profit</query>
+    <query>sourcetype=access_* action=purchase  |  lookup prices_lookup productId AS productId   OUTPUT Code AS Code product_name AS product_name price AS price sale_price AS sale_price | eval profit = price - sale_price | search $Field$="*$Value$*" | rex field=useragent "(?P&lt;browser&gt;[^\/]+)\/(?P&lt;version&gt;[^ ]+)" | stats count as Transaction,count(eval(status=200)) as success,count(eval(status!=200)) as fail by host,_time,product_name,categoryId,version,browser,profit</query>
     <earliest>$tok_time.earliest$</earliest>
     <latest>$tok_time.latest$</latest>
   </search>
+  <!--<row>
+    <panel>
+      <table depends="$verbose$">
+        <title>Customer Information</title>
+        <search base="customer">
+          <query>search $form.Field$="*$form.Value$*"| head 25</query>
+        </search>
+        <option name="count">5</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$verbose$">
+        <title>Vendor Information</title>
+        <search base="vendor">
+          <query>search $form.Field$="*$form.Value$*"| head 25</query>
+        </search>
+        <option name="count">5</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row> -->
   <fieldset submitButton="true" autoRun="true">
     <input type="time" token="tok_time" searchWhenChanged="false">
       <label></label>
@@ -31,11 +53,11 @@
       <default>product_name</default>
       <initialValue>product_name</initialValue>
       <change>
-      <condition>
+        <condition>
           <set token="vendor_datamodel">Vendor</set>
           <set token="customer_datamodel">Customer</set>
         </condition>
-        </change>
+      </change>
     </input>
     <input type="text" token="Value">
       <label>Value</label>
@@ -53,12 +75,6 @@
       <choice value="12h">12h</choice>
       <choice value="1d">1d</choice>
       <default>1d</default>
-    </input>
-    <input type="radio" token="summary">
-      <label>Summary</label>
-      <choice value="t">Cache</choice>
-      <choice value="f">Live</choice>
-      <default>t</default>
     </input>
   </fieldset>
   <row>
@@ -257,42 +273,13 @@
       </table>
     </panel>
   </row>
-  <!--<row>
-    <panel>
-      <table depends="$verbose$">
-        <title>Customer Information</title>
-        <search base="customer">
-          <query>search $form.Field$="*$form.Value$*"| head 25</query>
-        </search>
-        <option name="count">5</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">none</option>
-        <option name="rowNumbers">false</option>
-        <option name="wrap">true</option>
-      </table>
-    </panel>
-    <panel>
-      <table depends="$verbose$">
-        <title>Vendor Information</title>
-        <search base="vendor">
-          <query>search $form.Field$="*$form.Value$*"| head 25</query>
-        </search>
-        <option name="count">5</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">none</option>
-        <option name="rowNumbers">false</option>
-        <option name="wrap">true</option>
-      </table>
-    </panel>
-  </row> -->
   <row>
     <panel>
       <html>
       <h3>
-       <p>
-        If you want to know about <a href="/app/search/customer?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Customer Details</a> , <a href="/app/search/vendor?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Vendor Details</a> and <a href="/app/search/business?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Business Details</a> information </p> </h3>
-
-    </html>
+      <p>
+        If you want to know about <a href="/app/search/customer_search?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Customer Details</a> , <a href="/app/search/vendor_search?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Vendor Details</a> and <a href="/app/search/business_search?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Business Details</a> information </p> </h3>
+          </html>
     </panel>
     <panel>
       <html>

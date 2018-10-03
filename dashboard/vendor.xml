@@ -22,12 +22,12 @@
       <choice value="product_name">product_name</choice>
       <default>product_name</default>
       <initialValue>product_name</initialValue>
-       <change>
-      <condition>
+      <change>
+        <condition>
           <set token="vendor_datamodel">Vendor</set>
           <set token="customer_datamodel">Customer</set>
         </condition>
-        </change>
+      </change>
     </input>
     <input type="text" token="Value">
       <label>Value</label>
@@ -153,12 +153,11 @@
       <table>
         <title>Profit by Vendor</title>
         <search base="timeInfo">
-          <query>stats sum(price) AS "Revenue", sum(sale_price) AS "sale_price" by VendorID
-|  eval profit = Revenue - sale_price
-|  fields - Revenue,sale_price</query>
+          <query>stats sum(profit) AS "profit" by VendorID</query>
         </search>
         <option name="count">5</option>
         <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
         <drilldown>
           <!-- Use set to specify the new token to be created.
                      Use any token from the page or from the click event to produce the value needed. -->
@@ -305,8 +304,8 @@
     <panel>
       <html>
       <h3>
-       <p>
-        If you want to know about <a href="/app/search/tutorial?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Customer Details</a> , <a href="/app/search/conf2018_vendor_datamodel?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Vendor Details</a> and <a href="/app/search/business?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Business Details</a> information </p> </h3>
+        <p>
+        If you want to know about <a href="/app/search/customer?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Customer Details</a> , <a href="/app/search/vendor?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Vendor Details</a> and <a href="/app/search/business?form.tok_time.earliest=$tok_time.earliest$&amp;form.tok_time.latest=$tok_time.latest$&amp;form.Field=product_name&amp;form.filter=contains&amp;form.Value=$Value$&amp;form.tok_bucket=$tok_bucket$&amp;form.summary=$summary$" target="_blank">Business Details</a> information </p> </h3>
 
     </html>
     </panel>
