@@ -17,3 +17,5 @@ Before using these please make sure
 10. Switch between Cache to Live if you don't accelerate the data model.
 
 __NOTE__: Please make sure your acceleration is 100% before proceeding for dashboard execution.
+
+Video - https://github.com/sumitnagal/splunkconf2018/blob/master/video/Conf%20Demo%202018.mp4
