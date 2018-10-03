@@ -1,0 +1,113 @@
+<form theme="light">
+  <label>DataModel Health</label>
+  <fieldset submitButton="false">
+    <input type="time" token="field1">
+      <label></label>
+      <default>
+        <earliestTime>-7d</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <chart>
+        <title>DataModels - Run Time versus Schedule Freq</title>
+        <search>
+          <query>index=_audit source=audittrail [|rest /servicesNS/-/-/data/models splunk_server=local search="acceleration=1" | rename eai:acl.app AS app  | eval cron=coalesce('acceleration.cron_schedule', "5 * * * *")  | fields title, app, cron  | map maxsearches=99 search="| rest /servicesNS/-/-/admin/summarization/tstats%3ADM_$$app$$_$$title$$ | eval cron=$$cron$$"     | fields summary.last_sid   |  rex field=summary.last_sid "(?&lt;FieldB&gt;[^__]*)\__(?&lt;FieldC&gt;[^__]*)\__(?&lt;FieldD&gt;[^__]*)\__(?&lt;FieldE&gt;[^__]*)\_" | eval search_id="'".FieldB."__".FieldC."__".FieldD."__".FieldE."*'" | fields  search_id | format] info=completed  | eval 5minsref=300  | rex field=search_id "(?&lt;FieldB&gt;[^__]*)\__(?&lt;FieldC&gt;[^__]*)\__(?&lt;FieldD&gt;[^__]*)\__(?&lt;FieldE&gt;[^__]*)\_" | eval runtime_id="'".FieldB."__".FieldC."__".FieldD."__".FieldE."*'"  | timechart span=10m max(total_run_time) as RunTime max(5minsref) as ScheduleFrequency by savedsearch_name</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.overlayFields">"ScheduleFrequency: _ACCELERATE_DM_search_internal_audit_logs_ACCELERATE_","ScheduleFrequency: _ACCELERATE_DM_search_internal_server_ACCELERATE_"</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisStart</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+    <panel>
+      <table>
+        <title>Times of DataModel Accelerated Summaries</title>
+        <search>
+          <query>| rest /servicesNS/-/-/data/models splunk_server=local search="acceleration=1"  | rename "acceleration.earliest_time" as Acceleration_Setting  | fields title Acceleration_Setting  | map maxsearches=20 search="tstats summariesonly=t min(_time) as mint, max(_time) as maxt from datamodel=\"$$title$$\"  | eval Data_Model=\"$$title$$\"  | eval Acceleration_Setting=\"$$Acceleration_Setting$$\""   | eval nowt=now()  | eval lagt=nowt-maxt  | eval Lag_Seconds=lagt  | eval Lag_Minutes=round(lagt/60,1)  | eval Min_Time=strftime(mint, "%d/%m/%Y %H:%M:%S")   | eval Max_Time=strftime(maxt, "%d/%m/%Y %H:%M:%S")  | eval Now_Time=strftime(nowt, "%d/%m/%Y %H:%M:%S") | table Data_Model Acceleration_Setting Min_Time Max_Time Now_Time Lag_Seconds Lag_Minutes</query>
+          <earliest>-15m</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>User Searches</title>
+        <search>
+          <query>index=_audit  action=search NOT user="n/a" NOT user="splunk-system-user" NOT "scheduler__nobody__search" host=*  | timechart span=1m count by user useother=f limit=30</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>rest Call of Data Models with Summary Times</title>
+        <search>
+          <query>| rest /servicesNS/-/-/data/models splunk_server=local search="acceleration=1" |  rename eai:acl.app AS app | eval cron=coalesce('acceleration.cron_schedule', "5 * * * *") | fields title, app, cron | map maxsearches=99 search="| rest /servicesNS/-/-/admin/summarization/tstats%3ADM_$$app$$_$$title$$ | eval cron=$$cron$$"  | eval LagMinutes=round(($$summary.mod_time$$-$$summary.latest_time$$)/60,1)  | eval SummaryTimeRageDays=round(($$summary.latest_time$$-$$summary.earliest_time$$)/3600/24,1) | convert ctime(summary.mod_time) as SummaryModTime ctime(summary.earliest_time) as SummaryEarliestTime ctime(summary.latest_time) as SummaryLatestTime  | fields - id search | table summary.id  SummaryEarliestTime SummaryLatestTime  SummaryModTime  SummaryTimeRageDays   LagMinutes updated</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="list.drilldown">full</option>
+        <option name="list.wrap">1</option>
+        <option name="maxLines">5</option>
+        <option name="raw.drilldown">full</option>
+        <option name="table.drilldown">all</option>
+        <option name="table.wrap">1</option>
+        <option name="type">list</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+</form>
